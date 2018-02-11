@@ -43,11 +43,9 @@ choice=input("%s or %s: " %(name1, name2)).lower()
 if(choice[0:1]==name1[0:1].lower()):
     ip=ip1
     token=token1
-    chosen=true
 elif(choice[0:1]==name2[0:1].lower()):
     ip=ip2
     token=token2
-    chosen=true
 else: 
     print("invalid name.")
 
