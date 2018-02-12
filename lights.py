@@ -41,11 +41,11 @@ for x in data['ips']:
 print("\n")
 
 try:
-    choice=int(input(MAGENTA+">>> "+END))
+    choice=input(MAGENTA+">>> "+END)
     ip='https://'+data['ips']['%s' %choice]
     token=data['tokens']['%s' %choice]
 except:
-    print(RED+UNDERLINE+"\nResponse must be an available integer."+END+"\n\n")
+    print(RED+UNDERLINE+"\nInvalid choice."+END+"\n\n")
     exit()
 
 r=requests.get('%s/api/%s/lights/' %(ip, token))
