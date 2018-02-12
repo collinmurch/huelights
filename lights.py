@@ -1,21 +1,17 @@
 import time,sys,requests,json
 
-data=json.load(open('lightsdata.json'))
-
-token1=data['tokens']['1']
-ip1='http://%s' %data['ips']['1']
-token2=data['tokens']['2']
-ip2='http://%s' %data['ips']['2']
-name1=data['names']['1']
-name2=data['names']['2']
+try:
+    data=json.load(open('lightsdata.json'))
+except:
+    print(RED+UNDERLINE+"\nCould not read lightsdata.json. Does it exist?"+END+"\n\n")
+    exit()
 
 ip=''
 token=''
-
 on='{"on":true}'
 off='{"on":false}'
 
-BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, END = '\033[36;1m', '\033[91;1m', '\33[37;1m', '\33[93;1m', '\033[35;1m', '\033[32;1m', '\033[0m'
+BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, UNDERLINE, END = '\033[36;1m', '\033[91;1m', '\33[37;1m', '\33[93;1m', '\033[35;1m', '\033[32;1m', '\033[4m', '\033[0m'
 
 sys.stdout.write("\n\n\n"+BLUE+WHITE+
                  " -------------------------------------------\n"+
@@ -38,16 +34,19 @@ def cycle():
         flick(ip, token, int(x), off)
         time.sleep(1)
 
-choice=input("%s or %s: " %(name1, name2)).lower()
+sys.stdout.write(BLUE+UNDERLINE+"Choose a Hue Box:\n\n"+END)
 
-if(choice[0:1]==name1[0:1].lower()):
-    ip=ip1
-    token=token1
-elif(choice[0:1]==name2[0:1].lower()):
-    ip=ip2
-    token=token2
-else: 
-    print("invalid name.")
+for x in data['ips']:
+    sys.stdout.write(YELLOW+"["+MAGENTA+x+YELLOW+"]: "+WHITE+data['ips'][x]+END+"\n")
+print("\n")
+
+try:
+    choice=int(input(MAGENTA+">>> "+END))
+    ip='https://'+data['ips']['%s' %choice]
+    token=data['tokens']['%s' %choice]
+except:
+    print(RED+UNDERLINE+"\nResponse must be an available integer."+END+"\n\n")
+    exit()
 
 r=requests.get('%s/api/%s/lights/' %(ip, token))
 lights=json.loads(r.text).keys()
