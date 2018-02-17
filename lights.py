@@ -1,8 +1,8 @@
-import time,sys,requests,json,random
-#Under heavy development -- #import generatetoken as gToken
+import sys, requests, json, random, bridges
+from time import sleep
 
-ip, token='', ''
-functions=["on", "off", "change color", "cycle", "rainbow"]
+#Since the handler is modular, they must identical to the function that they refer to
+functions=['on', 'off', 'color', 'cycle', 'rainbow']
 
 #Default data
 lColors={
@@ -18,60 +18,137 @@ lColors={
 ON, OFF='{"on":true}', '{"on":false}'
 
 #Text colors
-BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, UNDERLINE, END = '\033[36;1m', '\033[91;1m', '\33[37;1m', '\33[93;1m', '\033[35;1m', '\033[32;1m', '\033[4m', '\033[0m'
+BLUE, RED, WHITE, YELLOW, MAGENTA, GREEN, UNDERLINE, END = '\33[36;1m', '\33[91;1m', '\33[37;1m', '\33[93;1m', '\33[35;1m', '\33[32;1m', '\33[4m', '\033[0m'
 
 def apiError():
-    print(RED+UNDERLINE+"\n\nCould not access API of selected bridge."+END+"\n\n")
-    exit()
+    sys.stdout.write(RED+UNDERLINE+"\n\nCould not access API of selected bridge."+END+"\n\n")
+    sys.exit()
 
 def choiceError():
-    print(RED+UNDERLINE+"\n\nInvalid choice."+END+"\n\n")
-    exit()
+    sys.stdout.write(RED+UNDERLINE+"\nInvalid choice."+END+"\n\n\n")
+    bridgeHandler()
+
+def unknownError():
+    sys.stdout.write(RED+UNDERLINE+"\n\nAn Error Occurred."+END+"\n\n")
+    sys.exit()
 
 #Get user's choice in an integer
 def intResponse():
     try:
         return int(input(MAGENTA+"\n>>> "+END))
+    except KeyboardInterrupt:
+        print("\n")
+        sys.exit()
     except:
         choiceError()
 
 #Change state of light
 def flick(ip, token, light, lightData):
     try:
-        r=requests.put('%s/api/%s/lights/%d/state' %(ip, token, light), data=lightData)
+        r=requests.put('http://%s/api/%s/lights/%d/state' %(ip, token, light), data=lightData)
     except:
         apiError()
 
-    print(r.text)
-
 #Turn all lights on
-def on():
+def on(ip, token, lights):
     for x in lights:
         flick(ip, token, int(x), ON)
 
+    funcHandler(ip, token, lights)
+
 #Turn all lights off
-def off():
+def off(ip, token, lights):
     for x in lights:
         flick(ip, token, int(x), OFF)
 
+    funcHandler(ip, token, lights)
+
 #Cycle through every light and turn it on and off
-def cycle(n):
+def cycle(ip, token, lights):
+    n=repeatHandler()
+
     for i in range(n):
         for x in lights:
-            flick(ip, token, int(x), ON)
-            time.sleep(1)
-            flick(ip, token, int(x), OFF)
-            time.sleep(1)
+            try:
+                flick(ip, token, int(x), ON)
+                sleep(1)
+                flick(ip, token, int(x), OFF)
+                sleep(1)
+            except KeyboardInterrupt:
+                print("\n")
+                sys.exit()
+            except:
+                unknownError()
+
+    funcHandler(ip, token, lights)
 
 #Cycle through all lights and change the color
-def rainbow(n):
+def rainbow(ip, token, lights):
+    n=repeatHandler()
+
     for i in range(n):
         for x in lights:
-            flick(ip, token, int(x), '{"xy": [%0.4f, %0.4f]' %(random.uniform(0,1), random.uniform(0,1))+"}")
-            time.sleep(1)
+            try:
+                flick(ip, token, int(x), '{"xy": [%0.4f, %0.4f]' %(random.uniform(0,1), random.uniform(0,1))+"}")
+                sleep(1)
+            except KeyboardInterrupt:
+                print("\n")
+                sys.exit()
+            except:
+                unknownError()
+
+    funcHandler(ip, token, lights)
 
 #Change the color of the lights
-def color():
+def color(ip, token, lights):
+    c=colorHandler()
+
+    try:
+        for x in lights:
+            flick(ip, token, int(x), c)
+    except:
+        choiceError()
+    
+    funcHandler(ip, token, lights)
+
+#Get new token
+def generateToken(ip):
+    sys.stdout.write(YELLOW+"\n\nNo token detected; generating a new one.\n\n\n"+END)
+
+    try:
+        sleep(1)
+    except KeyboardInterrupt:
+        print("\n")
+        sys.exit()
+    except:
+        unknownError()
+
+    #Wait up to 5 minutes for link button to be pressed
+    i=0
+    try:
+        while i<=600:
+            sys.stdout.write(BLUE+UNDERLINE+"\rPlease press link button on the bridge"+('.'*(i%3+1))+END)
+            sys.stdout.flush()
+
+            token=bridges.getToken(ip)
+
+            if token is not '':
+                return token
+
+            sleep(0.5)
+            i=i+1
+    except KeyboardInterrupt:
+        print("\n")
+        sys.exit()
+    except:
+        unknownError()
+    
+    #If it reaches here, we assume token generation failed
+    sys.stdout.write(RED+UNDERLINE+"\n\n\nCould not generate token."+END+"\n\n")
+    sys.exit()
+
+#Ask for color choice and then store input
+def colorHandler():
     sys.stdout.write(BLUE+UNDERLINE+"\n\nWhich color?\n\n"+END)
     
     #Enumerate through the color values and store the color data in a new array
@@ -81,17 +158,68 @@ def color():
         sys.stdout.write(YELLOW+"["+MAGENTA+str(c+1)+YELLOW+"]: "+WHITE+color.capitalize()+END+"\n")
         tempColors.append(lColors[color])
 
-    colorChoice=intResponse()-1
-    try:
-        for x in lights:
-            flick(ip, token, int(x), tempColors[colorChoice])
-    except:
+    return tempColors[intResponse()-1]
+
+#Ask for amount of repeats then store input
+def repeatHandler():
+    sys.stdout.write(BLUE+UNDERLINE+"\n\nHow many repeats?\n"+END)
+
+    return intResponse()
+
+#Function selector
+def funcHandler(ip, token, lights):
+    sys.stdout.write(BLUE+UNDERLINE+"\n\nChoose a function:\n\n"+END)
+
+    #List all functions
+    for x in range(0, len(functions)):
+        sys.stdout.write(YELLOW+"["+MAGENTA+str(x+1)+YELLOW+"]: "+WHITE+functions[x].capitalize()+END+"\n")
+
+    funcChoice=intResponse()
+
+    if funcChoice<1 or funcChoice>len(functions):
         choiceError()
+
+    #Call cooresponding function
+    eval(functions[funcChoice-1]+'(ip, token, lights)')
+
+#Token and ip selector
+def bridgeHandler():
+    sys.stdout.write(BLUE+UNDERLINE+"Choose a Hue Bridge:\n\n"+END)
+
+    ips = bridges.scan()
+
+    #List all gathered ips
+    for x in ips:
+        sys.stdout.write(YELLOW+"["+MAGENTA+str((ips.index(x)+1))+YELLOW+"]: "+WHITE+x+END+"\n")
+
+    ipChoice=intResponse()
+
+    if ipChoice<1 or ipChoice>len(ips):
+        choiceError()
+
+    #Set chosen ip and token
+    ip=ips[ipChoice-1]
+    if ip not in data:
+        token=generateToken(ip)
+        data[ip]=token
+        with open('lightsdata.json', 'w') as f:
+            json.dump(data, f)
+    else:
+        token=data[ip]
+
+    #Test API, and gather all available lights
+    try:
+        r=requests.get('http://%s/api/%s/lights/' %(ip, token))
+        lights=json.loads(r.text).keys()
+    except:
+        apiError()
+
+    funcHandler(ip, token, lights)
 
 try:
     data=json.load(open('lightsdata.json'))
 except:
-    print(RED+UNDERLINE+"\nCould not read lightsdata.json. Does it exist?"+END+"\n\n")
+    sys.stdout.write(RED+UNDERLINE+"\nCould not read lightsdata.json. Does it exist?"+END+"\n\n")
     exit()
 
 #Welcome message
@@ -100,52 +228,9 @@ sys.stdout.write("\n\n\n"+BLUE+WHITE+
                  WHITE+"| "+MAGENTA+"█░░█ "+BLUE+"█░░█ "+GREEN+"█▀▀ "+MAGENTA+"█░░ "+BLUE+"░▀░ "+GREEN+"█▀▀▀ "+MAGENTA+"█░░█ "+BLUE+"▀▀█▀▀ "+GREEN+"█▀▀"+WHITE+" |\n"+
                  WHITE+"| "+MAGENTA+"█▀▀█ "+BLUE+"█░░█ "+GREEN+"█▀▀ "+MAGENTA+"█░░ "+BLUE+"▀█▀ "+GREEN+"█░▀█ "+MAGENTA+"█▀▀█ "+BLUE+"░░█░░ "+GREEN+"▀▀█"+WHITE+" |\n"+ 
                  WHITE+"| "+MAGENTA+"▀░░▀ "+BLUE+"░▀▀▀ "+GREEN+"▀▀▀ "+MAGENTA+"▀▀▀ "+BLUE+"▀▀▀ "+GREEN+"▀▀▀▀ "+MAGENTA+"▀░░▀ "+BLUE+"░░▀░░ "+GREEN+"▀▀▀"+WHITE+" |  "+
-                 WHITE+"v1.0\n"+
+                 WHITE+"v2.0\n"+
                  " -------------------------------------------\n"+
                  RED+"Made by: {}Collin Murch ({}@collinmurch{}){}".format(YELLOW, BLUE, YELLOW, END).center(80)+
                  "\n\n\n".center(0))
 
-sys.stdout.write(BLUE+UNDERLINE+"Choose a Hue Bridge:\n\n"+END)
-
-#List all ips
-for x in data['ips']:
-    sys.stdout.write(YELLOW+"["+MAGENTA+x+YELLOW+"]: "+WHITE+data['ips'][x]+END+"\n")
-
-ipChoice=intResponse()
-
-#Set chosen ip and token
-ip='http://'+data['ips'][str(ipChoice)]
-token=data['tokens'][str(ipChoice)]
-
-
-sys.stdout.write(BLUE+UNDERLINE+"\n\nChoose a function:\n\n"+END)
-
-#List all functions
-for x in range(0, len(functions)):
-    sys.stdout.write(YELLOW+"["+MAGENTA+str(x+1)+YELLOW+"]: "+WHITE+functions[x].capitalize()+END+"\n")
-
-funcChoice=intResponse()
-
-#Test API, and gather all available lights
-try:
-    r=requests.get('%s/api/%s/lights/' %(ip, token))
-    lights=json.loads(r.text).keys()
-except:
-    apiError()
-
-#Function handler
-if funcChoice is 1:
-    on()
-elif funcChoice is 2:
-    off()
-elif funcChoice is 3:
-    color()
-else:
-    sys.stdout.write(BLUE+UNDERLINE+"\n\nHow many repeats?\n"+END)
-
-    repeats=intResponse()
-
-    if funcChoice is 4:
-        cycle(repeats)
-    if funcChoice is 5:
-        rainbow(repeats)
+bridgeHandler()
