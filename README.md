@@ -11,7 +11,7 @@ To use this script, both the API library **"requests"**, and an empty **"lightsd
 
 
 ---
-*huelights setup example:*
+*Setup example:*
 
 ```
 >>> pip install requests
