@@ -19,7 +19,7 @@ To use this script, both the API library **"requests"**, and an empty **"lightsd
 
 >>> git clone https://github.com/collinmurch/huelights
 
->>> cd /huelights
+>>> cd ./huelights
 
 >>> touch lightsdata.json
 
