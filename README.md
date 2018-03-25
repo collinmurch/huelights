@@ -17,6 +17,8 @@ To use this script, both the API library **"requests"**, and an empty **"lightsd
 ```
 >>> pip install requests
 
+>>> git clone https://github.com/collinmurch/huelights
+
 >>> cd /huelights
 
 >>> touch lightsdata.json
