@@ -1,6 +1,7 @@
+# huelights
+
 ![huelightsimage](https://i.imgur.com/8srTx4x.png)
 
-# huelights
 A simple python script built to interact with Philips Hue lights.
 
 
