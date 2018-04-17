@@ -1,14 +1,14 @@
+# huelights
+
 ![huelightsimage](https://i.imgur.com/8srTx4x.png)
 
-# huelights
 A simple python script built to interact with Philips Hue lights.
-
-
-*Only MacOS and Linux with Python 3 are supported.*
 
 
 To use this script, both the API library **"requests"**, and an empty **"lightsdata.json"** file are required.
 
+
+*Only MacOS and Linux with Python 3 are supported.*
 
 ---
 *Setup example:*
@@ -16,7 +16,9 @@ To use this script, both the API library **"requests"**, and an empty **"lightsd
 ```
 >>> pip install requests
 
->>> cd /huelights
+>>> git clone https://github.com/collinmurch/huelights
+
+>>> cd ./huelights
 
 >>> touch lightsdata.json
 
