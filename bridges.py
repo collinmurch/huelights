@@ -29,4 +29,3 @@ def testToken(ip, token):
         return True
     else:
         return False
-    
